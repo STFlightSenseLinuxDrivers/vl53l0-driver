@@ -113,6 +113,12 @@ static int stmvl53l0_get_dt_data(struct device *dev, struct cci_data *data)
 			vreg_cfg->cam_vreg->reg_name,
 			vreg_cfg->cam_vreg->min_voltage,
 			vreg_cfg->cam_vreg->max_voltage);
+
+        rc = msm_sensor_driver_get_gpio_data(&(data->gconf), of_node);
+		if ((rc < 0) || (NULL == data->gconf)) {
+			vl53l0_errmsg("No Laser Sensor GPIOs to be configured!\n");
+		}
+
 	}
 	vl53l0_dbgmsg("End rc =%d\n", rc);
 
@@ -340,6 +346,9 @@ int stmvl53l0_power_up_cci(void *cci_object, unsigned int *preset_flag)
 {
 	int ret = 0;
 	struct cci_data *data = (struct cci_data *)cci_object;
+	struct gpio *gpio_tbl = NULL;
+	uint8_t gpio_tbl_size = 0;
+    int i = 0;
 
 	vl53l0_dbgmsg("Enter");
 
@@ -349,6 +358,43 @@ int stmvl53l0_power_up_cci(void *cci_object, unsigned int *preset_flag)
 		vl53l0_errmsg("stmvl53l0_cci_init failed %d\n", __LINE__);
 		return ret;
 	}
+
+	/* Check if GPIO needs to be enabled for chip select */
+	vl53l0_dbgmsg("Get gpio table!size: %d\n", data->gconf->cam_gpio_req_tbl_size);
+	gpio_tbl =  data->gconf->cam_gpio_req_tbl;
+	gpio_tbl_size = data->gconf->cam_gpio_req_tbl_size;
+	if (gpio_tbl_size > 0) {
+        ret = msm_camera_pinctrl_init(&(data->pinctrl_info),
+			&(data->pdev->dev));
+		if (ret < 0) {
+			vl53l0_errmsg("Initialization of pinctrl failed\n");
+			data->cam_pinctrl_status = 0;
+		} else {
+			data->cam_pinctrl_status = 1;
+		}
+
+
+		for (i = 0; i < gpio_tbl_size; i++) {
+			ret = gpio_request_one(gpio_tbl[i].gpio,
+				gpio_tbl[i].flags, gpio_tbl[i].label);
+			if (ret < 0) {
+				vl53l0_errmsg("Request for GPIO %d failed! Err: %d\n",
+					gpio_tbl[i].gpio, ret);
+			} else {
+				if (data->cam_pinctrl_status) {
+					ret = pinctrl_select_state(data->pinctrl_info.pinctrl,
+						data->pinctrl_info.gpio_state_active);
+					if (ret < 0) {
+						vl53l0_errmsg("%s: Cannot set pin to active state!\n", __func__);
+					}
+				}
+				vl53l0_dbgmsg("Set pin %d value to 1!\n",
+					gpio_tbl[i].gpio);
+				gpio_set_value_cansleep(gpio_tbl[i].gpio, 1);
+			}
+		}
+	}
+		
 	/* actual power up */
 	if (data && data->device_type == MSM_CAMERA_PLATFORM_DEVICE) {
 		ret = stmvl53l0_vreg_control(data, 1);
@@ -369,6 +415,9 @@ int stmvl53l0_power_down_cci(void *cci_object)
 {
 	int ret = 0;
 	struct cci_data *data = (struct cci_data *)cci_object;
+	int i = 0;
+	struct gpio *gpio_tbl = NULL;
+	uint8_t gpio_tbl_size = 0;
 
 	vl53l0_dbgmsg("Enter\n");
 	if (data->power_up) {
@@ -386,6 +435,27 @@ int stmvl53l0_power_down_cci(void *cci_object)
 					"stmvl53l0_vreg_control failed %d\n",
 					__LINE__);
 				return ret;
+			}
+		}
+
+		/* reset GPIO pins */
+		gpio_tbl =  data->gconf->cam_gpio_req_tbl;
+		gpio_tbl_size = data->gconf->cam_gpio_req_tbl_size;
+		if (gpio_tbl_size > 0) {
+			for (i = 0; i < gpio_tbl_size; i++) {
+				gpio_set_value_cansleep(
+					gpio_tbl[i].gpio, 0);
+			}
+			if (data->cam_pinctrl_status) {
+				ret = pinctrl_select_state(data->pinctrl_info.pinctrl,
+					data->pinctrl_info.gpio_state_suspend);
+				if (ret < 0) {
+					vl53l0_errmsg("Error setting gpio pin to supsend state!\n");
+				}
+
+				devm_pinctrl_put(data->pinctrl_info.pinctrl);
+				data->cam_pinctrl_status = 0;
+				gpio_free_array(gpio_tbl, gpio_tbl_size);
 			}
 		}
 	}

@@ -2027,7 +2027,7 @@ static int stmvl53l0_init_client(struct stmvl53l0_data *data)
 
 
 	if (Status == VL53L0_ERROR_NONE && data->reset) {
-		if (papi_func_tbl->PerformRefCalibration != NULL) {
+		if (papi_func_tbl->SetRefCalibration != NULL) {
 			vl53l0_dbgmsg("Call of VL53L0_SetRefCalibration\n");
 			Status = papi_func_tbl->SetRefCalibration(vl53l0_dev,
 					vl53l0_dev->VhvSettings, vl53l0_dev->PhaseCal); /* Ref calibration */
@@ -2282,24 +2282,51 @@ static int stmvl53l0_start(struct stmvl53l0_data *data, uint8_t scaling,
 	data->gpio_polarity = VL53L0_INTERRUPTPOLARITY_LOW;
 
 	/* Following two calls are made from IOCTL as well */
-	papi_func_tbl->SetGpioConfig(vl53l0_dev, 0, 0,
+	Status = papi_func_tbl->SetGpioConfig(vl53l0_dev, 0, 0,
 		data->gpio_function,
 		VL53L0_INTERRUPTPOLARITY_LOW);
-
-	papi_func_tbl->SetInterruptThresholds(vl53l0_dev, 0,
-		data->low_threshold, data->high_threshold);
-
-	if (data->deviceMode == VL53L0_DEVICEMODE_CONTINUOUS_TIMED_RANGING ) {
-	papi_func_tbl->SetInterMeasurementPeriodMilliSeconds(vl53l0_dev,
-			data->interMeasurems);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("Failed to SetGpioConfig. Error = %d\n", Status);
+		return -EPERM;
 	}
 
-	pr_err("DeviceMode:0x%x, interMeasurems:%d==\n", data->deviceMode,
+
+	Status = papi_func_tbl->SetInterruptThresholds(vl53l0_dev, 0,
+		data->low_threshold, data->high_threshold);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("Failed to SetInterruptThresholds. Error = %d\n", Status);
+		return -EPERM;
+	}
+
+
+	if (data->deviceMode == VL53L0_DEVICEMODE_CONTINUOUS_TIMED_RANGING ) {
+		Status = papi_func_tbl->SetInterMeasurementPeriodMilliSeconds(vl53l0_dev,
 			data->interMeasurems);
-	papi_func_tbl->SetDeviceMode(vl53l0_dev,
-			data->deviceMode);
-	papi_func_tbl->ClearInterruptMask(vl53l0_dev,
+		if (Status != VL53L0_ERROR_NONE) {
+			vl53l0_errmsg("Failed to SetInterMeasurementPeriodMilliSeconds. Error = %d\n", Status);
+			return -EPERM;
+		}
+		pr_err("DeviceMode:0x%x, interMeasurems:%d==\n", data->deviceMode,
+				data->interMeasurems);
+
+
+	}
+
+
+	Status = papi_func_tbl->SetDeviceMode(vl53l0_dev,
+										data->deviceMode);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("Failed to SetDeviceMode. Error = %d\n", Status);
+		return -EPERM;
+	}
+
+	Status = papi_func_tbl->ClearInterruptMask(vl53l0_dev,
 							0);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("Failed to ClearInterruptMask. Error = %d\n", Status);
+		return -EPERM;
+	}
+
 
 
 	Status = stmvl53l0_config_use_case(vl53l0_dev);
@@ -2309,7 +2336,12 @@ static int stmvl53l0_start(struct stmvl53l0_data *data, uint8_t scaling,
 	}
 
 	/* start the ranging */
-	papi_func_tbl->StartMeasurement(vl53l0_dev);
+	Status = papi_func_tbl->StartMeasurement(vl53l0_dev);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("Failed to StartMeasurement. Error = %d\n", Status);
+		return -EPERM;
+	}
+
 	data->enable_ps_sensor = 1;
 
 #ifndef USE_INT
@@ -2370,7 +2402,6 @@ static void stmvl53l0_timer_fn(unsigned long data)
 
 static int stmvl53l0_perform_ref_refspad_calibration(struct stmvl53l0_data *data)
 {
-	int rc = 0;
 	VL53L0_Error Status = VL53L0_ERROR_NONE;
 	VL53L0_DEV   vl53l0_dev = data;
 	VL53L0_DeviceInfo_t DeviceInfo;
@@ -2382,13 +2413,6 @@ static int stmvl53l0_perform_ref_refspad_calibration(struct stmvl53l0_data *data
 	vl53l0_dbgmsg("Enter\n");
 
 	/* Caller of this function should ensure mutual exclusion */
-
-	/* Power up */
-	rc = pmodule_func_tbl->power_up(vl53l0_dev->client_object, &data->reset);
-	if (rc) {
-		vl53l0_errmsg("%d,error rc %d\n", __LINE__, rc);
-		return rc;
-	}
 
 	vl53l0_dbgmsg("Call of VL53L0_DataInit\n");
 	Status = papi_func_tbl->DataInit(vl53l0_dev); /* Data initialization */
@@ -2450,11 +2474,7 @@ static int stmvl53l0_perform_ref_refspad_calibration(struct stmvl53l0_data *data
 	vl53l0_dev->isApertureSpads = isApertureSpads;
 
 end:
-	rc = pmodule_func_tbl->power_down(data->client_object);
-	if (rc) {
-		vl53l0_errmsg("%d, error rc %d\n", __LINE__, rc);
-		return rc;
-	}
+
 
 	return Status;
 }
@@ -2642,11 +2662,27 @@ int stmvl53l0_setup(struct stmvl53l0_data *data)
 	data->comms_type      = 1;
 	data->comms_speed_khz = 400;
 
+
+
+	/* Power up */
+	rc = pmodule_func_tbl->power_up(data->client_object, &data->reset);
+	if (rc) {
+		vl53l0_errmsg("%d,error rc %d\n", __LINE__, rc);
+		return rc;
+	}
+
 	/* Setup API functions based on revision */
 	stmvl53l0_setupAPIFunctions(data);
 
 	/* Perform Ref and RefSpad calibrations and save the values */
 	stmvl53l0_perform_ref_refspad_calibration(data);
+
+	rc = pmodule_func_tbl->power_down(data->client_object);
+	if (rc) {
+		vl53l0_errmsg("%d, error rc %d\n", __LINE__, rc);
+		return rc;
+	}
+
 	vl53l0_dbgmsg("support ver. %s enabled\n", DRIVER_VERSION);
 	vl53l0_dbgmsg("End");
 
