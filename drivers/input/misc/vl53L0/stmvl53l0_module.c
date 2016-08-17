@@ -1991,82 +1991,119 @@ static int stmvl53l0_init_client(struct stmvl53l0_data *data)
 	VL53L0_Error Status = VL53L0_ERROR_NONE;
 	VL53L0_DeviceInfo_t DeviceInfo;
 	VL53L0_DEV vl53l0_dev = data;
+	uint32_t refSpadCount;
+	uint8_t isApertureSpads;
+	uint8_t VhvSettings;
+	uint8_t PhaseCal;
 
 
 	vl53l0_dbgmsg("Enter\n");
 
+	data->I2cDevAddr      = 0x52;
+	data->comms_type      = 1;
+	data->comms_speed_khz = 400;
 
 
-	if (Status == VL53L0_ERROR_NONE && data->reset) {
+
+	/* Setup API functions based on revision */
+	stmvl53l0_setupAPIFunctions(data);
+
+	/* Perform Ref and RefSpad calibrations and save the values */
+
+
+	if (data->reset) {
 		pr_err("Call of VL53L0_DataInit\n");
 		Status = papi_func_tbl->DataInit(vl53l0_dev); /* Data initialization */
 		//data->reset = 0;
+		if (Status != VL53L0_ERROR_NONE) {
+			vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+			return Status;
+		}
 	}
 
+	vl53l0_dbgmsg("VL53L0_GetDeviceInfo:\n");
+	Status = papi_func_tbl->GetDeviceInfo(vl53l0_dev, &DeviceInfo);
 	if (Status == VL53L0_ERROR_NONE) {
-		vl53l0_dbgmsg("VL53L0_GetDeviceInfo:\n");
-		Status = papi_func_tbl->GetDeviceInfo(vl53l0_dev, &DeviceInfo);
-		if (Status == VL53L0_ERROR_NONE) {
-			pr_err("Device Name : %s\n", DeviceInfo.Name);
-			pr_err("Device Type : %s\n", DeviceInfo.Type);
-			pr_err("Device ID : %s\n", DeviceInfo.ProductId);
-			pr_err("Product type: %d\n", DeviceInfo.ProductType);
-			pr_err("ProductRevisionMajor : %d\n",
-				DeviceInfo.ProductRevisionMajor);
-			pr_err("ProductRevisionMinor : %d\n",
+		pr_err("Device Name : %s\n", DeviceInfo.Name);
+		pr_err("Device Type : %s\n", DeviceInfo.Type);
+		pr_err("Device ID : %s\n", DeviceInfo.ProductId);
+		pr_err("Product type: %d\n", DeviceInfo.ProductType);
+		pr_err("ProductRevisionMajor : %d\n",
+			DeviceInfo.ProductRevisionMajor);
+		pr_err("ProductRevisionMinor : %d\n",
 				DeviceInfo.ProductRevisionMinor);
-		}
 	}
-
-	if (Status == VL53L0_ERROR_NONE) {
-		vl53l0_dbgmsg("Call of VL53L0_StaticInit\n");
-		Status = papi_func_tbl->StaticInit(vl53l0_dev);
 		/* Device Initialization */
+	vl53l0_dbgmsg("Call of VL53L0_StaticInit\n");
+	Status = papi_func_tbl->StaticInit(vl53l0_dev);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+		return Status;
 	}
 
 
 
-	if (Status == VL53L0_ERROR_NONE && data->reset) {
-		if (papi_func_tbl->SetRefCalibration != NULL) {
-			vl53l0_dbgmsg("Call of VL53L0_SetRefCalibration\n");
-			Status = papi_func_tbl->SetRefCalibration(vl53l0_dev,
-					vl53l0_dev->VhvSettings, vl53l0_dev->PhaseCal); /* Ref calibration */
+
+
+	if (papi_func_tbl->PerformRefCalibration != NULL && data->reset) {
+		vl53l0_dbgmsg("Call of VL53L0_PerformRefCalibration\n");
+		Status = papi_func_tbl->PerformRefCalibration(vl53l0_dev,
+				&VhvSettings, &PhaseCal); /* Ref calibration */
+		if (Status != VL53L0_ERROR_NONE) {
+			vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+			return Status;
+		}
+	}
+	vl53l0_dbgmsg("VHV = %u, PhaseCal = %u\n", VhvSettings, PhaseCal);
+	vl53l0_dev->VhvSettings = VhvSettings;
+	vl53l0_dev->PhaseCal = PhaseCal;
+
+	if (papi_func_tbl->PerformRefSpadManagement != NULL && data->reset) {
+		vl53l0_dbgmsg("Call of VL53L0_PerformRefSpadManagement\n");
+		Status = papi_func_tbl->PerformRefSpadManagement(vl53l0_dev,
+				&refSpadCount, &isApertureSpads); /* Ref Spad Management */
+		if (Status != VL53L0_ERROR_NONE) {
+			vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+			return Status;
 		}
 	}
 
-	if (Status == VL53L0_ERROR_NONE && data->reset) {
-		if (papi_func_tbl->SetReferenceSpads != NULL) {
-			vl53l0_dbgmsg("Call of VL53L0_SetReferenceSpads\n");
-			Status = papi_func_tbl->SetReferenceSpads(vl53l0_dev,
-					vl53l0_dev->refSpadCount, vl53l0_dev->isApertureSpads); /* Ref Spad Management */
-		}
-	}
+	vl53l0_dbgmsg("SpadCount = %u, isAperature = %u\n", refSpadCount, isApertureSpads);		
+	vl53l0_dev->refSpadCount = refSpadCount;
+	vl53l0_dev->isApertureSpads = isApertureSpads;
 
-	if (Status == VL53L0_ERROR_NONE && data->reset) {
-		Status = papi_func_tbl->SetXTalkCompensationEnable(vl53l0_dev,1);
-	}
+
+
 
 	if (Status == VL53L0_ERROR_NONE && data->reset) {
 		if ((papi_func_tbl->SetOffsetCalibrationDataMicroMeter != NULL) &&
 			(vl53l0_dev->setCalibratedValue & SET_OFFSET_CALIB_DATA_MICROMETER_MASK)) {
 			vl53l0_dbgmsg("Call of SetOffsetCalibrationDataMicroMeter\n");
 			Status = papi_func_tbl->SetOffsetCalibrationDataMicroMeter(vl53l0_dev,
-					vl53l0_dev->OffsetMicroMeter); 
+					vl53l0_dev->OffsetMicroMeter);
+			if (Status != VL53L0_ERROR_NONE) {
+				vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+				return Status;
+			} 
 		}
 	}
 
 
 
-	if (Status == VL53L0_ERROR_NONE && data->reset) {
+	if (data->reset) {
 		if ((papi_func_tbl->SetXTalkCompensationRateMegaCps != NULL) &&
 			(vl53l0_dev->setCalibratedValue & SET_XTALK_COMP_RATE_MCPS_MASK)) {
 			vl53l0_dbgmsg("Call of SetXTalkCompensationRateMegaCps\n");
 			Status = papi_func_tbl->SetXTalkCompensationRateMegaCps(vl53l0_dev,
 					vl53l0_dev->XTalkCompensationRateMegaCps); 
+			if (Status != VL53L0_ERROR_NONE) {
+				vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+				return Status;
+			} 
 		}
 	}
 
-	if (Status == VL53L0_ERROR_NONE && data->reset) {
+	if (data->reset) {
 		if (vl53l0_dev->setCalibratedValue & SET_XTALK_COMP_RATE_MCPS_MASK) { /* Xtalk calibration done*/
 
 			FixPoint1616_t ritValue = 0; /* Range Ignore Threshold */
@@ -2080,29 +2117,42 @@ static int stmvl53l0_init_client(struct stmvl53l0_data *data)
 			if (papi_func_tbl->SetLimitCheckEnable != NULL) {
 				Status = papi_func_tbl->SetLimitCheckEnable (vl53l0_dev,
 							VL53L0_CHECKENABLE_RANGE_IGNORE_THRESHOLD, 1);
+				if (Status != VL53L0_ERROR_NONE) {
+					vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+					return Status;
+				} 							
 			}
 
-			if ((Status == VL53L0_ERROR_NONE )  &&
-					(papi_func_tbl->SetLimitCheckValue != NULL)) {
+			if (papi_func_tbl->SetLimitCheckValue != NULL) {
 				vl53l0_dbgmsg("Set RIT - %u\n", ritValue);
 				Status = papi_func_tbl->SetLimitCheckValue (vl53l0_dev,
 								VL53L0_CHECKENABLE_RANGE_IGNORE_THRESHOLD,
 								ritValue); 
+				if (Status != VL53L0_ERROR_NONE) {
+					vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+					return Status;
+				} 		
 			}
 		}
 		data->reset = 0; 
 	}
 
 	/* Setup in single ranging mode */
-	if (Status == VL53L0_ERROR_NONE) {
+
 		pr_err("Call of VL53L0_SetDeviceMode\n");
-		Status = papi_func_tbl->SetDeviceMode(vl53l0_dev,
+	Status = papi_func_tbl->SetDeviceMode(vl53l0_dev,
 					VL53L0_DEVICEMODE_SINGLE_RANGING);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+		return Status;
+	} 		
+	
 
-	}
-	if (Status == VL53L0_ERROR_NONE)
-		Status = papi_func_tbl->SetWrapAroundCheckEnable(vl53l0_dev, 1);
-
+	Status = papi_func_tbl->SetWrapAroundCheckEnable(vl53l0_dev, 1);
+	if (Status != VL53L0_ERROR_NONE) {
+		vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
+		return Status;
+	} 
 #ifdef CALIBRATION_FILE
 	/*stmvl53l0_read_calibration_file(data);*/
 #endif
@@ -2241,6 +2291,7 @@ static int stmvl53l0_start(struct stmvl53l0_data *data, uint8_t scaling,
 		vl53l0_errmsg("%d,error rc %d\n", __LINE__, rc);
 		return rc;
 	}
+
 	/* init */
 	rc = stmvl53l0_init_client(data);
 	if (rc) {
@@ -2400,84 +2451,7 @@ static void stmvl53l0_timer_fn(unsigned long data)
 	vl53l0_dbgmsg("Sensor HAL Flush Count = %u\n", vl53l0_dev->flushCount);
 }
 
-static int stmvl53l0_perform_ref_refspad_calibration(struct stmvl53l0_data *data)
-{
-	VL53L0_Error Status = VL53L0_ERROR_NONE;
-	VL53L0_DEV   vl53l0_dev = data;
-	VL53L0_DeviceInfo_t DeviceInfo;
-	uint32_t refSpadCount;
-	uint8_t isApertureSpads;
-	uint8_t VhvSettings;
-	uint8_t PhaseCal;
 
-	vl53l0_dbgmsg("Enter\n");
-
-	/* Caller of this function should ensure mutual exclusion */
-
-	vl53l0_dbgmsg("Call of VL53L0_DataInit\n");
-	Status = papi_func_tbl->DataInit(vl53l0_dev); /* Data initialization */
-	if (Status != VL53L0_ERROR_NONE) {
-		vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
-		goto end;
-	}
-	 
-
-	vl53l0_dbgmsg("VL53L0_GetDeviceInfo:\n");
-	Status = papi_func_tbl->GetDeviceInfo(vl53l0_dev, &DeviceInfo);
-	if (Status != VL53L0_ERROR_NONE) {
-		vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
-		goto end;
-	} else {
-			vl53l0_dbgmsg("Device Name : %s\n", DeviceInfo.Name);
-			vl53l0_dbgmsg("Device Type : %s\n", DeviceInfo.Type);
-			vl53l0_dbgmsg("Device ID : %s\n", DeviceInfo.ProductId);
-			vl53l0_dbgmsg("Product type: %d\n", DeviceInfo.ProductType);
-			vl53l0_dbgmsg("ProductRevisionMajor : %d\n",
-				DeviceInfo.ProductRevisionMajor);
-			vl53l0_dbgmsg("ProductRevisionMinor : %d\n",
-				DeviceInfo.ProductRevisionMinor);
-	}
-
-	vl53l0_dbgmsg("Call of VL53L0_StaticInit\n");
-	Status = papi_func_tbl->StaticInit(vl53l0_dev);
-	if (Status != VL53L0_ERROR_NONE) {
-		vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
-		goto end;
-	}
-
-
-	if (papi_func_tbl->PerformRefCalibration != NULL) {
-		vl53l0_dbgmsg("Call of VL53L0_PerformRefCalibration\n");
-		Status = papi_func_tbl->PerformRefCalibration(vl53l0_dev,
-				&VhvSettings, &PhaseCal); /* Ref calibration */
-		if (Status != VL53L0_ERROR_NONE) {
-			vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
-			goto end;
-		}
-	}
-	vl53l0_dbgmsg("VHV = %u, PhaseCal = %u\n", VhvSettings, PhaseCal);
-	vl53l0_dev->VhvSettings = VhvSettings;
-	vl53l0_dev->PhaseCal = PhaseCal;
-
-
-	if (papi_func_tbl->PerformRefSpadManagement != NULL) {
-		vl53l0_dbgmsg("Call of VL53L0_PerformRefSpadManagement\n");
-		Status = papi_func_tbl->PerformRefSpadManagement(vl53l0_dev,
-				&refSpadCount, &isApertureSpads); /* Ref Spad Management */
-		if (Status != VL53L0_ERROR_NONE) {
-			vl53l0_errmsg("%d- error status %d\n", __LINE__, Status);
-			goto end;
-		}
-	}
-	vl53l0_dbgmsg("SpadCount = %u, isAperature = %u\n", refSpadCount, isApertureSpads);		
-	vl53l0_dev->refSpadCount = refSpadCount;
-	vl53l0_dev->isApertureSpads = isApertureSpads;
-
-end:
-
-
-	return Status;
-}
 
 /*
  * I2C init/probing/exit functions
@@ -2658,30 +2632,6 @@ int stmvl53l0_setup(struct stmvl53l0_data *data)
 
 
 
-	data->I2cDevAddr      = 0x52;
-	data->comms_type      = 1;
-	data->comms_speed_khz = 400;
-
-
-
-	/* Power up */
-	rc = pmodule_func_tbl->power_up(data->client_object, &data->reset);
-	if (rc) {
-		vl53l0_errmsg("%d,error rc %d\n", __LINE__, rc);
-		return rc;
-	}
-
-	/* Setup API functions based on revision */
-	stmvl53l0_setupAPIFunctions(data);
-
-	/* Perform Ref and RefSpad calibrations and save the values */
-	stmvl53l0_perform_ref_refspad_calibration(data);
-
-	rc = pmodule_func_tbl->power_down(data->client_object);
-	if (rc) {
-		vl53l0_errmsg("%d, error rc %d\n", __LINE__, rc);
-		return rc;
-	}
 
 	vl53l0_dbgmsg("support ver. %s enabled\n", DRIVER_VERSION);
 	vl53l0_dbgmsg("End");

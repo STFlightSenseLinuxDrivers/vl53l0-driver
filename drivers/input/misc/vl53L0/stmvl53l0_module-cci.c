@@ -218,23 +218,30 @@ static int stmvl53l0_cci_init(struct cci_data *data)
 			vl53l0_errmsg("%d, failed no memory\n", __LINE__);
 			return -ENOMEM;
 		}
-		cci_client = data->client->cci_client;
-		cci_client->cci_subdev = msm_cci_get_subdev();
-		cci_client->cci_i2c_master = data->cci_master;
-		v4l2_subdev_init(&data->msm_sd.sd, data->subdev_ops);
-		v4l2_set_subdevdata(&data->msm_sd.sd, data);
-		data->msm_sd.sd.internal_ops = &msm_tof_internal_ops;
-		data->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-		snprintf(data->msm_sd.sd.name, ARRAY_SIZE(data->msm_sd.sd.name),
-			"msm_tof");
-		media_entity_init(&data->msm_sd.sd.entity, 0, NULL, 0);
-		data->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
-		data->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_TOF;
-		data->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
-		msm_sd_register(&data->msm_sd);
-		msm_tof_v4l2_subdev_fops = v4l2_subdev_fops;
-		data->msm_sd.sd.devnode->fops = &msm_tof_v4l2_subdev_fops;
-		data->subdev_initialized = TRUE;
+        cci_client = data->client->cci_client;
+        cci_client->cci_subdev = msm_cci_get_subdev();
+
+		if (NULL == cci_client->cci_subdev) {
+			vl53l0_errmsg("CCI subdev is not initialized!!\n");
+			return -ENODEV;
+		} else {
+			cci_client->cci_i2c_master = data->cci_master;
+			v4l2_subdev_init(&data->msm_sd.sd, data->subdev_ops);
+			v4l2_set_subdevdata(&data->msm_sd.sd, data);
+			data->msm_sd.sd.internal_ops = &msm_tof_internal_ops;
+			data->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+			snprintf(data->msm_sd.sd.name, ARRAY_SIZE(data->msm_sd.sd.name),
+								"msm_tof");
+			media_entity_init(&data->msm_sd.sd.entity, 0, NULL, 0);
+			data->msm_sd.sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
+			data->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_TOF;
+			data->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
+			msm_sd_register(&data->msm_sd);
+			msm_tof_v4l2_subdev_fops = v4l2_subdev_fops;
+			data->msm_sd.sd.devnode->fops = &msm_tof_v4l2_subdev_fops;
+			data->subdev_initialized = TRUE;
+		}
+
 	}
 
 	cci_client->sid = 0x29;
