@@ -1,5 +1,5 @@
 /*******************************************************************************
-Copyright © 2015, STMicroelectronics International N.V.
+ * Copyright © 2015, STMicroelectronics International N.V.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -82,20 +82,20 @@ int32_t VL53L0_trace_config(char *filename, uint32_t modules,
 void trace_print_module_function(uint32_t module, uint32_t level,
 			uint32_t function, const char *format, ...);
 #else
-#define trace_print_module_function(...) 
+#define trace_print_module_function(...)
 #endif
 
 #define LOG_GET_TIME() (int)0
 /*
-#define _LOG_FUNCTION_START(module, fmt, ...) \
+ * #define _LOG_FUNCTION_START(module, fmt, ...) \
 		printk(KERN_INFO"beg %s start @%d\t" fmt "\n", \
 		__func__, LOG_GET_TIME(), ##__VA_ARGS__)
 
-#define _LOG_FUNCTION_END(module, status, ...)\
+ * #define _LOG_FUNCTION_END(module, status, ...)\
 		printk(KERN_INFO"end %s @%d %d\n", \
 		 __func__, LOG_GET_TIME(), (int)status)
 
-#define _LOG_FUNCTION_END_FMT(module, status, fmt, ...)\
+ * #define _LOG_FUNCTION_END_FMT(module, status, fmt, ...)\
 		printk(KERN_INFO"End %s @%d %d\t"fmt"\n" , \
 		__func__, LOG_GET_TIME(), (int)status, ##__VA_ARGS__)
 */
@@ -108,7 +108,7 @@ void trace_print_module_function(uint32_t module, uint32_t level,
 		 __func__, LOG_GET_TIME(), (int)status)
 
 #define _LOG_FUNCTION_END_FMT(module, status, fmt, ...)\
-		pr_err("End %s @%d %d\t"fmt"\n" , \
+		pr_err("End %s @%d %d\t"fmt"\n", \
 		__func__, LOG_GET_TIME(), (int)status, ##__VA_ARGS__)
 
 

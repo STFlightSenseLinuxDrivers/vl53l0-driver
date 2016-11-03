@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright © 2016, STMicroelectronics International N.V.
+ * Copyright © 2016, STMicroelectronics International N.V.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -131,7 +131,8 @@ uint32_t VL53L0_isqrt(uint32_t num)
 	uint32_t  res = 0;
 	uint32_t  bit = 1 << 30;
 	/* The second-to-top bit is set:
-	 *	1 << 14 for 16-bits, 1 << 30 for 32 bits */
+	 *	1 << 14 for 16-bits, 1 << 30 for 32 bits
+	 */
 
 	 /* "bit" starts at the highest power of four <= the argument. */
 	while (bit > num)
@@ -180,18 +181,20 @@ VL53L0_Error VL53L0_device_read_strobe(VL53L0_DEV Dev)
 	VL53L0_Error Status = VL53L0_ERROR_NONE;
 	uint8_t strobe;
 	uint32_t LoopNb;
+
 	LOG_FUNCTION_START("");
 
 	Status |= VL53L0_WrByte(Dev, 0x83, 0x00);
 
 	/* polling
-	 * use timeout to avoid deadlock*/
+	 * use timeout to avoid deadlock
+	 */
 	if (Status == VL53L0_ERROR_NONE) {
 		LoopNb = 0;
 		do {
 			Status = VL53L0_RdByte(Dev, 0x83, &strobe);
 			if ((strobe != 0x00) || Status != VL53L0_ERROR_NONE)
-					break;
+				break;
 
 			LoopNb = LoopNb + 1;
 		} while (LoopNb < VL53L0_DEFAULT_MAX_LOOP);
@@ -239,7 +242,8 @@ VL53L0_Error VL53L0_get_info_from_device(VL53L0_DEV Dev, uint8_t option)
 			ReadDataFromDeviceDone);
 
 	/* This access is done only once after that a GetDeviceInfo or
-	 * datainit is done*/
+	 * datainit is done
+	 */
 	if (ReadDataFromDeviceDone != 7) {
 
 		Status |= VL53L0_WrByte(Dev, 0x80, 0x01);
@@ -453,12 +457,12 @@ VL53L0_Error VL53L0_get_info_from_device(VL53L0_DEV Dev, uint8_t option)
 
 			OffsetMicroMeters = 0;
 			if (DistMeasFixed1104_400_mm != 0) {
-					OffsetFixed1104_mm =
-						DistMeasFixed1104_400_mm -
-						DistMeasTgtFixed1104_mm;
-					OffsetMicroMeters = (OffsetFixed1104_mm
+				OffsetFixed1104_mm =
+					DistMeasFixed1104_400_mm -
+					DistMeasTgtFixed1104_mm;
+				OffsetMicroMeters = (OffsetFixed1104_mm
 						* 1000) >> 4;
-					OffsetMicroMeters *= -1;
+				OffsetMicroMeters *= -1;
 			}
 
 			PALDevDataSet(Dev,
@@ -484,8 +488,8 @@ uint32_t VL53L0_calc_macro_period_ps(VL53L0_DEV Dev, uint8_t vcsel_period_pclks)
 	LOG_FUNCTION_START("");
 
 	/* The above calculation will produce rounding errors,
-	   therefore set fixed value
-	*/
+	 *  therefore set fixed value
+	 */
 	PLL_period_ps = 1655;
 
 	macro_period_vclks = 2304;
@@ -647,7 +651,8 @@ VL53L0_Error get_sequence_step_timeout(VL53L0_DEV Dev,
 				&CurrentVCSELPulsePeriodPClk);
 
 			/* Retrieve PRE-RANGE Timeout in Macro periods
-			 * (MCLKS) */
+			 * (MCLKS)
+			 */
 			if (Status == VL53L0_ERROR_NONE) {
 				Status = VL53L0_RdWord(Dev,
 				VL53L0_REG_PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI,
@@ -779,7 +784,8 @@ VL53L0_Error set_sequence_step_timeout(VL53L0_DEV Dev,
 					&CurrentVCSELPulsePeriodPClk);
 
 				/* Retrieve PRE-RANGE Timeout in Macro periods
-				 * (MCLKS) */
+				 * (MCLKS)
+				 */
 				if (Status == VL53L0_ERROR_NONE) {
 					Status = VL53L0_RdWord(Dev, 0x51,
 						&PreRangeEncodedTimeOut);
@@ -1070,7 +1076,8 @@ VL53L0_Error VL53L0_set_vcsel_pulse_period(VL53L0_DEV Dev,
 
 	/* Perform the phase calibration. This is needed after changing on
 	 * vcsel period.
-	 * get_data_enable = 0, restore_config = 1 */
+	 * get_data_enable = 0, restore_config = 1
+	 */
 	if (Status == VL53L0_ERROR_NONE)
 		Status = VL53L0_perform_phase_calibration(
 			Dev, &PhaseCalInt, 0, 1);
@@ -1151,7 +1158,8 @@ VL53L0_Error VL53L0_set_measurement_timing_budget_micro_seconds(VL53L0_DEV Dev,
 					&MsrcDccTccTimeoutMicroSeconds);
 
 		/* Subtract the TCC, MSRC and DSS timeouts if they are
-		 * enabled. */
+		 * enabled.
+		 */
 
 		if (Status != VL53L0_ERROR_NONE)
 			return Status;
@@ -1545,7 +1553,8 @@ VL53L0_Error VL53L0_calc_dmax(
 	if (totalCorrSignalRate_mcps > 0) {
 
 		/* Shift by 10 bits to increase resolution prior to the
-		 * division */
+		 * division
+		 */
 		signalRateTemp_mcps = totalSignalRate_mcps << 10;
 
 		/* Add rounding value prior to division */
@@ -1556,7 +1565,8 @@ VL53L0_Error VL53L0_calc_dmax(
 		minSignalNeeded_p1 /= totalCorrSignalRate_mcps;
 
 		/* Apply a factored version of the speed of light.
-		 Correction to be applied at the end */
+		 * Correction to be applied at the end
+		 */
 		minSignalNeeded_p1 *= 3;
 
 		/* FixPoint2210 * FixPoint2210 = FixPoint1220 */
@@ -1877,7 +1887,8 @@ VL53L0_Error VL53L0_calc_sigma_estimate(VL53L0_DEV Dev,
 		sigmaEstimateP2 = (ambientRate_kcps << 16)/peakSignalRate_kcps;
 		if (sigmaEstimateP2 > cAmbToSignalRatioMax) {
 			/* Clip to prevent overflow. Will ensure safe
-			 * max result. */
+			 * max result.
+			 */
 			sigmaEstimateP2 = cAmbToSignalRatioMax;
 		}
 		sigmaEstimateP2 *= cAmbientEffectiveWidth_centi_ns;
@@ -1903,7 +1914,8 @@ VL53L0_Error VL53L0_calc_sigma_estimate(VL53L0_DEV Dev,
 			xTalkCompRate_kcps) + 500)/1000;
 
 		/* Shift by 8 bits to increase resolution prior to the
-		 * division */
+		 * division
+		 */
 		diff1_mcps <<= 8;
 
 		/* FixPoint0824/FixPoint1616 = FixPoint2408 */
@@ -1981,7 +1993,8 @@ VL53L0_Error VL53L0_calc_sigma_estimate(VL53L0_DEV Dev,
 
 		if (sigmaEstRtn > cSigmaEstRtnMax) {
 			/* Clip to prevent overflow. Will ensure safe
-			 * max result. */
+			 * max result.
+			 */
 			sigmaEstRtn = cSigmaEstRtnMax;
 		}
 
@@ -2002,7 +2015,7 @@ VL53L0_Error VL53L0_calc_sigma_estimate(VL53L0_DEV Dev,
 
 		if ((peakSignalRate_kcps < 1) || (vcselTotalEventsRtn < 1) ||
 				(sigmaEstimate > cSigmaEstMax)) {
-				sigmaEstimate = cSigmaEstMax;
+			sigmaEstimate = cSigmaEstMax;
 		}
 
 		*pSigmaEstimate = (uint32_t)(sigmaEstimate);
@@ -2120,7 +2133,7 @@ VL53L0_Error VL53L0_get_pal_range_status(VL53L0_DEV Dev,
 			if ((SigmaLimitValue > 0) &&
 				(SigmaEstimate > SigmaLimitValue))
 					/* Limit Fail */
-					SigmaLimitflag = 1;
+				SigmaLimitflag = 1;
 		}
 	}
 

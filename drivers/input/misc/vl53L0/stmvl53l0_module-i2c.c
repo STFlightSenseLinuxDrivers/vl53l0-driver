@@ -76,7 +76,7 @@ static int stmvl53l0_parse_vdd(struct device *dev, struct i2c_data *data)
 }
 
 static int stmvl53l0_probe(struct i2c_client *client,
-				   const struct i2c_device_id *id)
+			   const struct i2c_device_id *id)
 {
 	int rc = 0;
 	struct stmvl53l0_data *vl53l0_data = NULL;
@@ -96,7 +96,7 @@ static int stmvl53l0_probe(struct i2c_client *client,
 	}
 	if (vl53l0_data) {
 		vl53l0_data->client_object =
-			kzalloc(sizeof(struct i2c_data), GFP_KERNEL);
+		    kzalloc(sizeof(struct i2c_data), GFP_KERNEL);
 		i2c_object = (struct i2c_data *)vl53l0_data->client_object;
 	}
 	i2c_object->client = client;
@@ -142,24 +142,25 @@ static int stmvl53l0_remove(struct i2c_client *client)
 }
 
 static const struct i2c_device_id stmvl53l0_id[] = {
-	{ STMVL53L0_DRV_NAME, 0 },
-	{ },
+	{STMVL53L0_DRV_NAME, 0},
+	{},
 };
+
 MODULE_DEVICE_TABLE(i2c, stmvl53l0_id);
 
 static const struct of_device_id st_stmvl53l0_dt_match[] = {
-	{ .compatible = "st,stmvl53l0", },
-	{ },
+	{.compatible = "st,stmvl53l0",},
+	{},
 };
 
 static struct i2c_driver stmvl53l0_driver = {
 	.driver = {
-		.name	= STMVL53L0_DRV_NAME,
-		.owner	= THIS_MODULE,
-		.of_match_table = st_stmvl53l0_dt_match,
-	},
-	.probe	= stmvl53l0_probe,
-	.remove	= stmvl53l0_remove,
+		   .name = STMVL53L0_DRV_NAME,
+		   .owner = THIS_MODULE,
+		   .of_match_table = st_stmvl53l0_dt_match,
+		   },
+	.probe = stmvl53l0_probe,
+	.remove = stmvl53l0_remove,
 	.id_table = stmvl53l0_id,
 
 };
@@ -175,13 +176,14 @@ int stmvl53l0_power_up_i2c(void *i2c_object, unsigned int *preset_flag)
 
 	/* actual power on */
 #ifndef STM_TEST
-	ret = regulator_set_voltage(data->vana,	VL53L0_VDD_MIN, VL53L0_VDD_MAX);
+	ret = regulator_set_voltage(data->vana, VL53L0_VDD_MIN, VL53L0_VDD_MAX);
 	if (ret < 0) {
-		vl53l0_errmsg("set_vol(%p) fail %d\n", data->vana , ret);
+		vl53l0_errmsg("set_vol(%p) fail %d\n", data->vana, ret);
 		return ret;
 	}
 	ret = regulator_enable(data->vana);
-	msleep(3);
+
+	usleep_range(2950, 3000);
 	if (ret < 0) {
 		vl53l0_errmsg("reg enable(%p) failed.rc=%d\n", data->vana, ret);
 		return ret;
@@ -203,11 +205,11 @@ int stmvl53l0_power_down_i2c(void *i2c_object)
 
 	vl53l0_dbgmsg("Enter\n");
 #ifndef STM_TEST
-	msleep(3);
+	usleep_range(2950, 3000);
 	ret = regulator_disable(data->vana);
 	if (ret < 0)
 		vl53l0_errmsg("reg disable(%p) failed.rc=%d\n",
-			data->vana, ret);
+			      data->vana, ret);
 
 	data->power_up = 0;
 #endif
@@ -261,4 +263,4 @@ void stmvl53l0_exit_i2c(void *i2c_object)
 	vl53l0_dbgmsg("End\n");
 }
 
-#endif /* end of NOT CAMERA_CCI */
+#endif				/* end of NOT CAMERA_CCI */

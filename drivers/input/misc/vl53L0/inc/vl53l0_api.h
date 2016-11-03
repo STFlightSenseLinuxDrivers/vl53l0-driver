@@ -1,5 +1,5 @@
 /*******************************************************************************
- Copyright © 2016, STMicroelectronics International N.V.
+ * Copyright © 2016, STMicroelectronics International N.V.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -124,7 +124,7 @@ VL53L0_API VL53L0_Error VL53L0_GetDeviceInfo(VL53L0_DEV Dev,
  * @return  "Other error code"    See ::VL53L0_Error
  */
 VL53L0_API VL53L0_Error VL53L0_GetDeviceErrorStatus(VL53L0_DEV Dev,
-	VL53L0_DeviceError *pDeviceErrorStatus);
+	VL53L0_DeviceError * pDeviceErrorStatus);
 
 /**
  * @brief Human readable Range Status string for a given RangeStatus
@@ -193,7 +193,7 @@ VL53L0_API VL53L0_Error VL53L0_GetPalStateString(VL53L0_State PalStateCode,
  * @return  "Other error code"    See ::VL53L0_Error
  */
 VL53L0_API VL53L0_Error VL53L0_GetPalState(VL53L0_DEV Dev,
-	VL53L0_State *pPalState);
+	VL53L0_State * pPalState);
 
 /**
  * @brief Set the power mode for a given Device
@@ -232,7 +232,7 @@ VL53L0_API VL53L0_Error VL53L0_SetPowerMode(VL53L0_DEV Dev,
  * @return  "Other error code"    See ::VL53L0_Error
  */
 VL53L0_API VL53L0_Error VL53L0_GetPowerMode(VL53L0_DEV Dev,
-	VL53L0_PowerModes *pPowerMode);
+	VL53L0_PowerModes * pPowerMode);
 
 /**
  * Set or over-hide part to part calibration offset
@@ -571,7 +571,7 @@ VL53L0_API VL53L0_Error VL53L0_SetDeviceMode(VL53L0_DEV Dev,
  * DeviceMode is not in the supported list
  */
 VL53L0_API VL53L0_Error VL53L0_GetDeviceMode(VL53L0_DEV Dev,
-	VL53L0_DeviceModes *pDeviceMode);
+	VL53L0_DeviceModes * pDeviceMode);
 
 /**
  * @brief  Sets the resolution of range measurements.
@@ -601,8 +601,8 @@ VL53L0_API VL53L0_Error VL53L0_SetRangeFractionEnable(VL53L0_DEV Dev,
  *
  * @note This function Accesses the device
  *
- * @param   Dev               Device Handle
- * @param   pEnable           Output Parameter reporting the fraction enable state.
+ * @param   Dev        Device Handle
+ * @param   pEnable    Output Parameter reporting the fraction enable state.
  *
  * @return  VL53L0_ERROR_NONE                   Success
  * @return  "Other error code"                  See ::VL53L0_Error
@@ -653,7 +653,7 @@ VL53L0_API VL53L0_Error VL53L0_SetHistogramMode(VL53L0_DEV Dev,
  * @return  "Other error code"    See ::VL53L0_Error
  */
 VL53L0_API VL53L0_Error VL53L0_GetHistogramMode(VL53L0_DEV Dev,
-	VL53L0_HistogramModes *pHistogramMode);
+	VL53L0_HistogramModes * pHistogramMode);
 
 /**
  * @brief Set Ranging Timing Budget in microseconds
@@ -1678,9 +1678,9 @@ VL53L0_API VL53L0_Error VL53L0_SetGpioConfig(VL53L0_DEV Dev, uint8_t Pin,
  * @return  "Other error code"    See ::VL53L0_Error
  */
 VL53L0_API VL53L0_Error VL53L0_GetGpioConfig(VL53L0_DEV Dev, uint8_t Pin,
-	VL53L0_DeviceModes *pDeviceMode,
-	VL53L0_GpioFunctionality *pFunctionality,
-	VL53L0_InterruptPolarity *pPolarity);
+	VL53L0_DeviceModes * pDeviceMode,
+	VL53L0_GpioFunctionality * pFunctionality,
+	VL53L0_InterruptPolarity * pPolarity);
 
 /**
  * @brief Set low and high Interrupt thresholds for a given mode

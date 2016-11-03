@@ -93,8 +93,8 @@ struct stmvl53l0_parameter {
  *  IOCTL Custom Use Case
  */
 struct stmvl53l0_custom_use_case {
-	FixPoint1616_t 	signalRateLimit;
-	FixPoint1616_t 	sigmaLimit;
+	FixPoint1616_t	signalRateLimit;
+	FixPoint1616_t	sigmaLimit;
 	uint32_t		preRangePulsePeriod;
 	uint32_t		finalRangePulsePeriod;
 	uint32_t		timingBudget;
@@ -106,15 +106,16 @@ struct stmvl53l0_custom_use_case {
  */
 struct stmvl53l0_data {
 
-	VL53L0_DevData_t Data;	/* !<embed ST VL53L0 Dev data as
-								"dev_data" */
-	uint8_t   I2cDevAddr;	/*!< i2c device address user specific field
-							*/
-	uint8_t   comms_type;	/*!< Type of comms : VL53L0_COMMS_I2C
-							or VL53L0_COMMS_SPI */
-	uint16_t  comms_speed_khz;	/*!< Comms speed [kHz] :
-						typically 400kHz for I2C */
-	uint8_t   bus_type;		/* CCI_BUS; I2C_BUS */
+	/* !<embed ST VL53L0 Dev data as "dev_data" */
+	VL53L0_DevData_t Data;
+	/*!< i2c device address user specific field*/
+	uint8_t   I2cDevAddr;
+	/*!< Type of comms : VL53L0_COMMS_I2C or VL53L0_COMMS_SPI */
+	uint8_t   comms_type;
+	/*!< Comms speed [kHz] : typically 400kHz for I2C */
+	uint16_t  comms_speed_khz;
+	/* CCI_BUS; I2C_BUS */
+	uint8_t   bus_type;
 
 	void *client_object; /* cci or i2c client */
 
@@ -136,8 +137,6 @@ struct stmvl53l0_data {
 	unsigned int enable_ps_sensor;
 
 	/* PS parameters */
-	//unsigned int ps_is_singleshot;
-	//unsigned int ps_is_started;
 	unsigned int ps_data;			/* to store PS data */
 
 	/* Calibration parameters */
@@ -164,8 +163,8 @@ struct stmvl53l0_data {
 	VL53L0_RangingMeasurementData_t rangeData;
 
 	/* Device parameters */
-	VL53L0_DeviceModes 			deviceMode;
-	uint32_t					interMeasurems;
+	VL53L0_DeviceModes	deviceMode;
+	uint32_t		interMeasurems;
 	VL53L0_GpioFunctionality gpio_function;
 	VL53L0_InterruptPolarity gpio_polarity;
 	FixPoint1616_t low_threshold;
@@ -175,14 +174,13 @@ struct stmvl53l0_data {
 	uint8_t delay_ms;
 
 	/* Timing Budget */
-	uint32_t 	   timingBudget;
+	uint32_t	timingBudget;
 	/* Use this threshold to force restart ranging */
 	uint32_t       noInterruptCount;
 	/* Use this flag to denote use case*/
-	uint8_t	    	useCase;
+	uint8_t		useCase;
 	/* Use this flag to indicate an update of use case */
 	uint8_t			updateUseCase;
-	
 	/* Polling thread */
 	struct task_struct *poll_thread;
 	/* Wait Queue on which the poll thread blocks */
