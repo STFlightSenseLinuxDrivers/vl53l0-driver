@@ -224,7 +224,7 @@ static int stmvl53l0_cci_init(struct cci_data *data)
 		if (cci_client->cci_subdev == NULL) {
 			vl53l0_errmsg("CCI subdev is not initialized!!\n");
 			return -ENODEV;
-
+		}
 		cci_client->cci_i2c_master = data->cci_master;
 		v4l2_subdev_init(&data->msm_sd.sd, data->subdev_ops);
 		v4l2_set_subdevdata(&data->msm_sd.sd, data);
