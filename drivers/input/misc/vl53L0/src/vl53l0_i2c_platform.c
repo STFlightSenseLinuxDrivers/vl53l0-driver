@@ -1,18 +1,19 @@
 /*
- * COPYRIGHT (C) STMicroelectronics 2015. All rights reserved.
+ *  Copyright (C) 2016 STMicroelectronics Imaging Division.
  *
- * This software is the confidential and proprietary information of
- * STMicroelectronics ("Confidential Information").  You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
- * with STMicroelectronics
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- * Programming Golden Rule: Keep it Simple!
- *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  */
 
 /*!
- * \file   VL53L0_platform.c
+ * \file   VL53L0_i2c_platform.c
  * \brief  Code function defintions for EWOK Platform Layer
  *
  */
